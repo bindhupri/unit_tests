@@ -1,0 +1,91 @@
+event = {
+           "offerId": 1210,
+          "payload": {
+            "version": "1.0",
+            "eventTimeStamp": "2023-11-13T14:07:03.072Z",
+            "status": "Published",
+            "promotionNumber": "14693833",
+            "promotionName": "DairyCampaignUpdated2",
+            "startDate": "2023-10-17",
+            "endDate": "2023-11-30",
+            "startTime": "13:00:00",
+            "endTime": "23:59:59",
+            "timeZone": "CST",
+            "clubLocalTime": True,
+            "salesBranding": {
+              "salesBrandingBadge": "default_IS_branding",
+              "foregroundColor": "#FFFFFF",
+              "backgroundColor": "#b00000",
+              "outlineColor": "#b00000",
+              "cornerRadius": "2"
+            },
+            "multimatchType": "SIMPLE",
+            "channels": [
+              "CLUB",
+              "CPU"
+            ],
+            "labels": [],
+            "membershipType": [
+              "ALL"
+            ],
+            "createdBy": "VN56B8I",
+            "modifiedBy": "S0K08LG",
+            "itemDetails": {
+              "itemListCount": 1,
+              "itemsPayload": [
+                {
+                  "itemType": "discountedItems",
+                  "mpq": "1",
+                  "itemListType": "list",
+                  "itemList": [
+                    "635921"
+                  ],
+                  "refId": 1,
+                  "repeatable": False
+                }
+              ]
+            },
+            "clubDetails": {
+              "clubListCount": 1,
+              "clubsPayload": [
+                {
+                  "clubType": "Standard",
+                  "clubList": [],
+                  "clubBigListURL": "ALL",
+                  "clubInclusion": True
+                }
+              ],
+              "clubOverride": [
+                {
+                  "clubNumber": "4749",
+                  "startDate": "2023-09-02",
+                  "startTime": "15:00:00",
+                  "endDate": "2023-09-30",
+                  "endTime": "19:00:00",
+                  "timeZone": "CST"
+                }
+              ]
+            },
+            "awardList": [
+              {
+                "promotionItemNumber": "980443813",
+                "gs1Code": "409804438130",
+                "awardType": "DISCOUNT_ITEM_PRICE",
+                "value": "1",
+                "discountMethod": "DOLLAR_OFF_EACH",
+                "fundingPercent": {
+                  "vendorFundingPercent": "0.00",
+                  "memberFundingPercent": "0.00",
+                  "samsFundingPercent": "100.0"
+                },
+                "itemDiscount": "1",
+                "itemRefId": [
+                  1
+                ]
+              }
+            ],
+            "isUpdate": True,
+            "created": "2023-10-30T05:53:37.017Z",
+            "lastModified": "2023-11-13T14:07:03.072Z"
+          }
+        }
