@@ -40,6 +40,32 @@ from eventhorizon import (
 
 print_bars = "######################################################################################################################################"
 
+class ClubsPayload(BaseModel):
+    clubType: str
+    bigListName: str
+    clubList: list
+    clubBigListURL: Optional[str]
+    clubInclusion: bool
+
+    @root_validator()
+    def validate_clubs_payload(cls,values):
+        clubType = values.get("clubType")
+        clubTypeSet = {"list", "biglist", "Standard"}
+        clubList = values.get("clubList")
+        clubBigListURL = values.get("clubBigListURL")
+
+        if clubType not in clubTypeSet:
+            raise ValueError(f"Club type must be in {clubTypeSet}, got '{clubType}'")
+        elif clubType == "list" and not clubList:
+            raise ValueError("Club list is empty")
+        elif clubType == "biglist" and not clubBigListURL:
+            raise ValueError("Club biglist url is empty")
+        return values
+
+class ClubDetails(BaseModel):
+    clubListCount: int
+    clubsPayload: Optional[List[ClubsPayload]]
+
 class ItemsPayload(BaseModel):
     itemType: str
     itemListType: str
@@ -55,7 +81,7 @@ class ItemsPayload(BaseModel):
         itemBigListURL = values.get("itemBigListURL")
 
         if itemListType not in itemListTypeSet:
-            raise ValueError(f"Item list type must be in {itemListType}, got '{itemListType}'")
+            raise ValueError(f"Item list type must be in {itemListTypeSet}, got '{itemListType}'")
         elif itemListType == "list" and not itemList:
             raise ValueError("Item list is empty")
         elif itemListType == "biglist" and not itemBigListURL:
@@ -87,12 +113,14 @@ class MembersPayload(BaseModel):
         return values
 
 class Member(BaseModel):
-    membersPayload: List[MembersPayload]
+    memberListCount: int
+    membersPayload: Optional[List[MembersPayload]]
 
 class Award(BaseModel):
     awardType: str = Field(..., min_length=1)
-    value: Optional[str]
-    discountMethod: Optional[str]
+    value: str = Field(..., min_length=1)
+    discountMethod: str = Field(..., min_length=1)
+    itemRefId: Optional[List[str]]
 
     @root_validator()
     def validate_award(cls,values):
@@ -116,9 +144,10 @@ class Payload(BaseModel):
     timeZone: str = Field(..., min_length=1)
     channels: List[str]
     labels: List[str]
-    awardList: List[Award]
+    awardList: Optional[List[Award]] = None
     memberDetails: Optional[Member] = None
     itemDetails: Optional[ItemDetails] = None
+    clubDetails: Optional[ClubDetails] = None
     membershipType: List[str]
 
     @root_validator()
@@ -128,12 +157,6 @@ class Payload(BaseModel):
 
         if status not in statusSet:
             raise ValueError(f"Status must be in {statusSet}, got '{status}'")
-
-        timeZone = values.get("timeZone")
-        timeZoneSet = {constants.CST, constants.EST, constants.PST}
-
-        if timeZone not in timeZoneSet:
-            raise ValueError(f"TimeZone must be in {timeZoneSet}, got '{timeZone}'")
 
         labels = values.get("labels")
         if constants.TETRIS in labels and constants.TIO in labels:
@@ -178,10 +201,15 @@ def process_event_data(received_event, connection_pool):
         print("Dumping the event into audit table")
         audit_offer_event(ouid=offer_uid, oid=offer_id, event_json=json_obj, status=constants.RECEIVED, comments='', received_date=dt, postgres_sql_pool=connection_pool)
 
-        unconsumable_labels = [constants.JOIN, constants.PAID_TRIAL, constants.FREE_TRIAL, constants.VOUCHER, constants.SPONSORED, constants.JOIN_NO_ADDONS, constants.JOIN_NO_UPGRADE, constants.RENEW, constants.UPGRADE, constants.NILPICK, constants.FREEOSK, constants.CREDIT, constants.SIF, constants.RAF, constants.PURPOSE_MEMBERSHIP]
+        unconsumable_labels = [constants.JOIN, constants.PAID_TRIAL, constants.FREE_TRIAL, constants.VOUCHER, constants.SPONSORED, constants.JOIN_NO_ADDONS, constants.JOIN_NO_UPGRADE, constants.RENEW, constants.UPGRADE, constants.NILPICK, constants.FREEOSK, constants.CREDIT, constants.SIF, constants.RAF, constants.PURPOSE_MEMBERSHIP, constants.JOIN_REJOINERS_OK, constants.JOIN_NO_BUSINESS, constants.MILITARY, constants.NURSE, constants.FIRST_RESPONDER, constants.TEACHER, constants.GOVERNMENT, constants.MEDICAL_PROVIDER, constants.STUDENT, constants.GOVASSIST, constants.SENIOR, constants.HOSPITAL, constants.ALUM, constants.ACQ_AFFILIATE, constants.ACQ_AFFINITY_AUDIENCES, constants.ACQ_BIG_PROMOTION, constants.ACQ_GENERAL_ACQUISITION, constants.ACQ_PAID_SEARCH_DISPLAY, constants.ACQ_PARTNERSHIP, constants.ACQ_SOCIAL_NON_DISCOUNTED, constants.ACQ_EBG, constants.ACQ_GROUPON, constants.ACQ_VALPACK, constants.ACQ_SIF]
 
-        # Check memberListCount
-        if 'offerIdList' not in received_event and 'memberDetails' in received_event['payload'] and received_event['payload']['memberDetails']['memberListCount'] != 1:
+        # Check memberDetails
+        if 'offerIdList' not in received_event and offer_source != "broadreach" and 'memberDetails' not in received_event['payload']:
+            print(print_bars)
+            print( f"Personalized offer missing memberDetails")
+            update_offer_event_status(offer_uid, constants.SKIPPED, "Personalized offer missing memberDetails", connection_pool)
+            print(print_bars)
+        elif 'offerIdList' not in received_event and 'memberDetails' in received_event['payload'] and received_event['payload']['memberDetails']['memberListCount'] != 1:
             print(print_bars)
             print( f"Offers with memberListCount != 1 won't be processed.")
             update_offer_event_status(offer_uid, constants.SKIPPED, "Received an offer with memberListCount not equal to 1, skipping this offer", connection_pool)
@@ -191,11 +219,6 @@ def process_event_data(received_event, connection_pool):
             print(print_bars)
             print( f"Offer won't be processed because it contains unconsumable label.")
             update_offer_event_status(offer_uid, constants.SKIPPED, "Received an offer with at least one unwanted label, skipping this offer", connection_pool)
-            print(print_bars)
-        elif 'offerIdList' not in received_event and received_event['payload']['promotionNumber'] in [143888, 143889, 143890, 143891]:
-            print(print_bars)
-            print( f"Temporarily skip certain offers due to invalid data field.")
-            update_offer_event_status(offer_uid, constants.SKIPPED, "Offer contains invalid data field, skipping this offer", connection_pool)
             print(print_bars)
         else:
             # Trim awardList based on awardType
