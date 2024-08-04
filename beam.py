@@ -51,25 +51,23 @@ class ProcessElement(beam.DoFn):
     def process(self, element):
         import random
         prod_id = element['prod_id']
-        cid = random.randint(1, 1000000)
+        cid = f"{element['id']_PPM}"
         prod_id_list = prod_id.split(',')
         items = self.generate_items(prod_id_list)
-        result = {
-            "CID": cid,
-            "data": {
-                "pbs": 1,
-                "ts": 1720602704,
-                "cid": str(cid),
-                "ct": 3,
-                "items": items
-            }
+        data = {
+            "pbs": 1,
+            "ts": 1720602704,
+            "cid": str(cid),
+            "ct": 3,
+            "items": items
         }
-        yield json.dumps(result)
+        # Convert data to a compact JSON string
+        yield json.dumps({"CID": cid, "data": json.dumps(data)})
 
 # Define the pipeline options
 pipeline_options = PipelineOptions()
 google_cloud_options = pipeline_options.view_as(GoogleCloudOptions)
-google_cloud_options.project = 'playground-s-11-b8'
+google_cloud_options.project = 'playground-s-11-b82a99a4'
 google_cloud_options.job_name = 'parquet-to-json'
 google_cloud_options.staging_location = 'gs://shuvabuc002/staging'
 google_cloud_options.temp_location = 'gs://shuvabuc002/temp'
@@ -81,10 +79,10 @@ worker_options.num_workers = 2  # Start with a smaller number of workers
 worker_options.max_num_workers = 3  # Set the maximum number of workers
 
 # Path to the input Parquet file in GCS
-input_parquet_path = 'gs://shuvabuc002/input/part-00000-c7585b4f-7e43-4685--c000.snappy.parquet'
+input_parquet_path = 'gs://shuvabuc002/input/part-00000-c7585b4f-7e43-4685-ad20-e6-c000.snappy.parquet'
 
 # Path to the output JSON file in GCS
-output_json_path = 'gs://shuvabuc002/output/output.json'
+output_json_path = 'gs://shuvabuc002/output/output2.json'
 
 # Create the pipeline
 with beam.Pipeline(options=pipeline_options) as p:
