@@ -1,9 +1,8 @@
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions, StandardOptions
 from apache_beam.io import ReadFromParquet, WriteToText
-from apache_beam.transforms.combiners import Sample
 import json
-
+from apache_beam.transforms.combiners import Sample
 
 class ProcessElement(beam.DoFn):
     default_values = {
@@ -59,6 +58,8 @@ class ProcessElement(beam.DoFn):
 
 def format_records(elements):
     """Format JSON records with commas, except the last one."""
+    if not elements:
+        return []
     formatted_elements = [element + ',' for element in elements[:-1]] + [elements[-1]]
     return formatted_elements
 
@@ -92,7 +93,8 @@ with beam.Pipeline(options=pipeline_options) as p:
     (
         p
         | 'Read from Parquet' >> ReadFromParquet(input_parquet_path)
-        | 'Random Sample of One' >> Sample.FixedSizeGlobally(2)
+        | 'Sample Records' >> Sample.FixedSizeGlobally(2)  # Sample 2 records
+        | 'Flatten List' >> beam.FlatMap(lambda x: x)  # Flatten the list of sampled records
         | 'Process Elements' >> beam.ParDo(ProcessElement())
         | 'Collect to List' >> beam.combiners.ToList()  # Collect all elements into a list
         | 'Format Records' >> beam.FlatMap(format_records)  # Format with commas and newlines
