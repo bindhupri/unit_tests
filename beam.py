@@ -49,21 +49,15 @@ class ProcessElement(beam.DoFn):
         return items
 
     def process(self, element):
-        import random
         prod_id = element['prod_id']
-        cid = f"{element['cid']}"
+        cid = element['cid']
         prod_id_list = prod_id.split(',')
         items = self.generate_items(prod_id_list)
-        data = {
-            "pbs": 1,
-            "ts": 1720602704,
-            "id": str(cid),
-            "ct": 3,
-            "items": items
-        }
-        # Convert data to a compact JSON string
-        yield data
+        data = {"pbs": 1,"ts": 1720602704,"id": str(cid),"ct": 3,"items": items}
+        yield json.dumps(data)
 
+#def format_json(element):
+    #return json.dumps(element, indent=4)
 # Define the pipeline options
 pipeline_options = PipelineOptions(
     runner='DataflowRunner',
@@ -100,5 +94,10 @@ with beam.Pipeline(options=pipeline_options) as p:
         | 'Random Sample of One' >> Sample.FixedSizeGlobally(2)
         | 'Flatten List' >> beam.FlatMap(lambda x: x)  # Since Sample returns a list of lists
         | 'Process Elements' >> beam.ParDo(ProcessElement())
+        #| 'Group into List' >> beam.combiners.ToList()
+        #| 'Format as JSON' >> beam.Map(format_json)
         | 'Write to File' >> WriteToText(output_json_path, num_shards=1, shard_name_template='', append_trailing_newlines=False)
     )
+
+
+
