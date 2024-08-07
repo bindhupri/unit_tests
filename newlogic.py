@@ -1,6 +1,7 @@
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions, StandardOptions
 from apache_beam.io import ReadFromParquet, WriteToText
+from apache_beam.transforms.combiners import Sample
 import json
 
 
@@ -91,12 +92,12 @@ with beam.Pipeline(options=pipeline_options) as p:
     (
         p
         | 'Read from Parquet' >> ReadFromParquet(input_parquet_path)
+        | 'Random Sample of One' >> Sample.FixedSizeGlobally(2)
         | 'Process Elements' >> beam.ParDo(ProcessElement())
         | 'Collect to List' >> beam.combiners.ToList()  # Collect all elements into a list
         | 'Format Records' >> beam.FlatMap(format_records)  # Format with commas and newlines
         | 'Write to File' >> WriteToText(
             output_json_path,
-            file_name_suffix='.json',
             num_shards=1,
             shard_name_template='',
             append_trailing_newlines=True  # Ensure newline at the end
