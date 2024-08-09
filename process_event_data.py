@@ -5,8 +5,6 @@ def process_event_data(received_event, connection_pool):
     offer_uid = ''
     offer_source = ''
     try:
-        offer_id_list = []
-        offer_id = ''
 
         # Handle offerIdList and offerSource in one place
         offer_id_list = received_event.get("offerIdList", [])
@@ -68,7 +66,7 @@ def process_event_data(received_event, connection_pool):
                 print("Validate event")
                 model = UpdateOfferMembersEvent(**received_event) if 'offerIdList' in received_event else OfferEvent(**received_event)
                 print(model.dict())
-                
+
             except ValidationError as e:
                 print("Incorrect attributes in the event")
                 print(e)
